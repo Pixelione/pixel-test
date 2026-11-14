@@ -1,0 +1,38 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #0d0f1a;
+  --tile: #181c2e;
+  --ink: #f5f6fa;
+  --gold: #ffd60a;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-tile: var(--tile);
+  --color-ink: var(--ink);
+  --color-gold: var(--gold);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+}
+
+/* In un layer: le classi utility (es. bg-red-500) possono sovrascriverle. */
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-gold px-4 py-2.5 font-semibold text-bg transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40;
+  }
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg border border-white/15 px-4 py-2.5 font-medium text-ink transition hover:bg-white/5 disabled:opacity-40;
+  }
+  .input {
+    @apply w-full rounded-lg border border-white/15 bg-tile px-3 py-2.5 text-ink placeholder:text-white/35 focus:border-gold focus:outline-none;
+  }
+  .card {
+    @apply rounded-xl border border-white/10 bg-tile/60 p-4;
+  }
+}
