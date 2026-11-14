@@ -7,10 +7,16 @@ const body = Space_Grotesk({ variable: '--font-body', subsets: ['latin'] });
 const code = JetBrains_Mono({ variable: '--font-code', subsets: ['latin'] });
 const pixel = Silkscreen({ variable: '--font-pixel', subsets: ['latin'], weight: ['400', '700'] });
 
+const title = 'PIXELIONE — Un milione di pixel, 1 € l\'uno';
+const description = 'Compra un\'area della tela, carica la tua immagine e il tuo link. Resta lì per sempre.';
+
 export const metadata: Metadata = {
-  title: 'PIXELIONE — Un milione di pixel, 1 € l\'uno',
-  description: 'Compra un\'area della tela, carica la tua immagine e il tuo link. Resta lì per sempre.',
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'),
+  title,
+  description,
   icons: { icon: '/logo.svg' },
+  openGraph: { title, description, type: 'website', locale: 'it_IT', siteName: 'PIXELIONE' },
+  twitter: { card: 'summary_large_image', title, description },
 };
 
 export const viewport: Viewport = { themeColor: '#07080f', width: 'device-width', initialScale: 1, viewportFit: 'cover' };

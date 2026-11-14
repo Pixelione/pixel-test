@@ -31,6 +31,7 @@ export default function CanvasView({
   const ptrs = useRef(new Map<number, { x: number; y: number }>());
   const drag = useRef<{ x: number; y: number; moved: number; cell: [number, number]; pinch?: number } | null>(null);
   const hoverCell = useRef('');
+  const imgCache = useRef(new Map<string, HTMLImageElement>()); // immagini aree già scaricate
 
   // Adatta la tela allo spazio libero tra i pannelli.
   const fit = () => {
@@ -62,9 +63,17 @@ export default function CanvasView({
       ctx.fillText('1.000.000 PIXEL · 1 € A PIXEL', CANVAS / 2, CANVAS / 2 + 64);
       ctx.restore();
       for (const a of areas) {
-        const img = new Image();
+        const cached = imgCache.current.get(a.image_url);
+        if (cached?.complete) {
+          ctx.drawImage(cached, a.x, a.y, a.w, a.h);
+          continue;
+        }
+        const img = cached ?? new Image();
+        if (!cached) {
+          img.src = a.image_url;
+          imgCache.current.set(a.image_url, img); // riuso tra un aggiornamento e l'altro: niente ricarico
+        }
         img.onload = () => alive && ctx.drawImage(img, a.x, a.y, a.w, a.h);
-        img.src = a.image_url;
       }
     });
     return () => {
