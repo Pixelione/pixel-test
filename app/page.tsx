@@ -1,6 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import AreaCard from '@/components/AreaCard';
 import CanvasView from '@/components/CanvasView';
 import { LEGAL } from '@/components/Footer';
 import { BONUS_EVERY, CANVAS, REFERRAL_PIXELS, type Area } from '@/lib/config';
@@ -16,14 +17,26 @@ export default function Home() {
   const [info, setInfo] = useState(false);
 
   useEffect(() => {
-    const load = () => fetch('/api/areas').then((r) => (r.ok ? r.json() : [])).then(setAreas).catch(() => {});
+    let etag = '';
+    // ETag → 304 quando nulla cambia. Primo caricamento sempre; il polling va in pausa a scheda nascosta.
+    const load = async () => {
+      try {
+        // no-store: niente rivalidazione automatica del browser (darebbe 304 senza corpo); l'ETag lo gestiamo noi.
+        const r = await fetch('/api/areas', { cache: 'no-store', headers: etag ? { 'if-none-match': etag } : {} });
+        if (r.status === 304) return;
+        etag = r.headers.get('etag') || '';
+        if (r.ok) setAreas(await r.json());
+      } catch {}
+    };
     load();
-    // shortcut: aggiornamento ogni 15 s; per il tempo reale vero passare a Supabase Realtime.
-    const t = setInterval(load, 15000);
+    const t = setInterval(() => document.hidden || load(), 15000);
+    const onVisible = () => !document.hidden && load();
+    document.addEventListener('visibilitychange', onVisible);
     const esc = (e: KeyboardEvent) => e.key === 'Escape' && (setInfo(false), setOpen(null));
     addEventListener('keydown', esc);
     return () => {
       clearInterval(t);
+      document.removeEventListener('visibilitychange', onVisible);
       removeEventListener('keydown', esc);
     };
   }, []);
@@ -109,25 +122,7 @@ export default function Home() {
         </div>
       </div>
 
-      {open && (
-        <div role="dialog" aria-label="Dettagli area" className="glass rise fixed inset-x-3 bottom-[124px] z-30 mx-auto max-w-md rounded-3xl p-4 sm:bottom-[112px]">
-          <div className="flex items-start gap-4">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={open.image_url} alt="" className="h-20 w-20 shrink-0 rounded-xl border border-white/10 bg-black object-contain" style={{ imageRendering: 'pixelated' }} />
-            <div className="min-w-0 flex-1">
-              <p className="text-lg font-bold leading-tight">{open.username}</p>
-              <p className="mt-0.5 font-mono text-xs text-white/50">{open.w}×{open.h} = {n(open.w * open.h)} px · {open.x}, {open.y}</p>
-              {open.message && <p className="mt-2 break-words text-sm text-white/85">{open.message}</p>}
-            </div>
-            <button type="button" onClick={() => setOpen(null)} aria-label="Chiudi" className="-mr-1 -mt-1 flex h-9 w-9 items-center justify-center rounded-full text-xl text-white/60 hover:bg-white/10 hover:text-white">×</button>
-          </div>
-          {open.link && (
-            <a href={open.link} target="_blank" rel="sponsored noopener noreferrer" className="btn mt-4 w-full">
-              Visita <span className="truncate font-normal opacity-70">{open.link.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '')}</span>
-            </a>
-          )}
-        </div>
-      )}
+      {open && <AreaCard area={open} onClose={() => setOpen(null)} />}
 
       {info && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-3 backdrop-blur-sm sm:items-center" onClick={() => setInfo(false)}>

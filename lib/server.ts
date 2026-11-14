@@ -6,7 +6,27 @@ export const db = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.en
   auth: { persistSession: false, autoRefreshToken: false },
 });
 
-export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2026-10-28.endive' });
+
+// Moderazione immagini opzionale: se configurata, invia il PNG a un servizio esterno che risponde
+// { allowed: boolean }. Senza configurazione non blocca nulla (resta la rimozione admin + segnalazioni).
+export async function moderateImage(png: Buffer): Promise<boolean> {
+  const url = process.env.MODERATION_API_URL;
+  if (!url) return true;
+  try {
+    const r = await fetch(url, {
+      method: 'POST',
+      headers: { 'content-type': 'application/octet-stream', ...(process.env.MODERATION_API_KEY ? { authorization: `Bearer ${process.env.MODERATION_API_KEY}` } : {}) },
+      body: new Uint8Array(png),
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!r.ok) return true; // servizio giù: non blocchiamo l'acquisto, l'admin vigila
+    const d = await r.json().catch(() => ({ allowed: true }));
+    return d.allowed !== false;
+  } catch {
+    return true;
+  }
+}
 
 export const fee = {
   percent: Number(process.env.STRIPE_FEE_PERCENT ?? 1.5),

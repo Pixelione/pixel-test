@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { CANVAS, MESSAGE_MAX, PRICE_CENTS } from '@/lib/config';
-import { db, ensureProfile, fee, getUser, json, siteUrl, stripe } from '@/lib/server';
+import { db, ensureProfile, fee, getUser, json, moderateImage, siteUrl, stripe } from '@/lib/server';
 
 export const dynamic = 'force-dynamic';
 
@@ -55,8 +55,12 @@ export async function POST(req: Request) {
   if (!size || size.w !== w || size.h !== h) return json({ error: 'Immagine non corrispondente all\'area' }, 400);
   if (png.length > 4 * 1024 * 1024) return json({ error: 'Immagine troppo pesante' }, 400);
 
+  // Moderazione automatica opzionale (MODERATION_API_URL). Senza, decide l'admin con rimozione/segnalazioni.
+  if (!(await moderateImage(png))) return json({ error: 'Immagine rifiutata dalla moderazione' }, 422);
+
   const path = `${user.id}/${randomUUID()}.png`;
-  const up = await db.storage.from('areas').upload(path, png, { contentType: 'image/png' });
+  // Immagine immutabile dopo l'acquisto: cache lunga sul CDN.
+  const up = await db.storage.from('areas').upload(path, png, { contentType: 'image/png', cacheControl: '31536000' });
   if (up.error) return json({ error: 'Caricamento immagine fallito' }, 500);
 
   const { data: r, error } = await db.rpc('reserve_area', {
@@ -100,7 +104,7 @@ export async function POST(req: Request) {
       success_url: `${base}/ordine?id=${r.order_id}&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${base}/ordine?id=${r.order_id}&annullato=1`,
       locale: 'it',
-    });
+    }, { idempotencyKey: `order-${r.order_id}` });
     await db.from('orders').update({ stripe_session_id: session.id }).eq('id', r.order_id);
     return json({ order_id: r.order_id, url: session.url });
   } catch (e) {

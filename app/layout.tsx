@@ -15,6 +15,9 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = { themeColor: '#07080f', width: 'device-width', initialScale: 1, viewportFit: 'cover' };
 
+// Rendering dinamico per richiesta: serve alla CSP con nonce (middleware.ts) di finire negli script di Next.
+export const dynamic = 'force-dynamic';
+
 // La tela (/) e l'acquisto (/compra) sono a schermo intero; le altre pagine usano app/(pagine)/layout.tsx.
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (

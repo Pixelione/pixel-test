@@ -1,23 +1,7 @@
 import type { NextConfig } from 'next';
 
-const supabase = new URL(process.env.NEXT_PUBLIC_SUPABASE_URL ?? 'https://placeholder.supabase.co').origin;
-
-// difesa in profondità: nessun dominio esterno a parte Supabase (immagini/dati) e Stripe (checkout).
-const csp = [
-  "default-src 'self'",
-  `img-src 'self' data: blob: ${supabase}`,
-  `connect-src 'self' ${supabase} https://api.stripe.com`,
-  "script-src 'self'",
-  "style-src 'self' 'unsafe-inline'", // Next inietta stili inline
-  'frame-src https://checkout.stripe.com https://js.stripe.com',
-  "base-uri 'self'",
-  "form-action 'self'",
-  "frame-ancestors 'none'",
-  'upgrade-insecure-requests',
-].join('; ');
-
+// La Content-Security-Policy (con nonce per richiesta) è in middleware.ts. Qui gli header statici.
 const securityHeaders = [
-  { key: 'Content-Security-Policy', value: csp },
   { key: 'X-Frame-Options', value: 'DENY' },
   { key: 'X-Content-Type-Options', value: 'nosniff' },
   { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },

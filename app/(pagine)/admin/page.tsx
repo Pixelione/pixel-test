@@ -4,7 +4,7 @@ import CanvasView from '@/components/CanvasView';
 import { api } from '@/lib/browser';
 import type { Area } from '@/lib/config';
 
-type AdminArea = Area & { email: string; owner: string; created_at: string };
+type AdminArea = Area & { email: string; owner: string; created_at: string; reports?: number; reasons?: string };
 type User = { id: string; username: string | null; email: string; credits: number };
 
 // Cancella aree (per account o con un rettangolo sulla tela) e riaccredita i pixel ai proprietari.
@@ -33,6 +33,18 @@ export default function Admin() {
     setConfirm(false);
   };
   const search = (params: string) => api(`/api/admin?${params}`).then(show).catch((e) => setMsg(e.message));
+  const loadReports = () =>
+    api<{ reports: (AdminArea & { area_id: number })[] }>('/api/admin?reports=1')
+      .then((r) => {
+        const areas = r.reports.map((a) => ({ ...a, id: a.area_id }));
+        setUsers([]);
+        setFound(areas);
+        setPicked(new Set()); // scelta manuale: non preselezionare le segnalate
+        setConfirm(false);
+        if (!areas.length) setMsg('Nessuna segnalazione aperta.');
+        else setMsg('');
+      })
+      .catch((e) => setMsg(e.message));
 
   const remove = async () => {
     const ids = [...picked];
@@ -62,6 +74,7 @@ export default function Admin() {
         <button type="button" className={selecting ? 'btn w-full' : 'btn-ghost w-full'} onClick={() => setSelecting((s) => !s)}>
           {selecting ? 'Trascina un rettangolo sulla tela…' : 'Seleziona con un rettangolo sulla tela'}
         </button>
+        <button type="button" className="btn-ghost w-full" onClick={loadReports}>Mostra le aree segnalate</button>
 
         {users.length > 0 && (
           <ul className="space-y-1 text-sm">
@@ -97,6 +110,7 @@ export default function Admin() {
                     <span className="min-w-0 flex-1">
                       <span className="block truncate"><b>{a.username ?? '—'}</b> · {a.email}</span>
                       <span className="block font-mono text-xs text-white/50">#{a.id} · {a.w}×{a.h} · {a.x},{a.y}</span>
+                      {a.reports ? <span className="mt-0.5 inline-block rounded bg-bad/15 px-1.5 py-0.5 text-xs text-bad">{a.reports} segnalazioni · {a.reasons}</span> : null}
                     </span>
                   </label>
                 </li>

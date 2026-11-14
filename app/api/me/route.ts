@@ -7,6 +7,7 @@ export async function GET(req: Request) {
   const user = await getUser(req);
   if (!user) return json({ error: 'Accedi per continuare' }, 401);
   const profile = await ensureProfile(user, req.headers.get('x-ref'));
+  db.rpc('touch_seen', { p_user: user.id }); // ultimo online, senza bloccare la risposta
   const [credits, areas, orders] = await Promise.all([
     db.rpc('credit_balance', { p_user: user.id }),
     db.from('areas').select('id,x,y,w,h,image_path,link,message,created_at').eq('owner', user.id).eq('status', 'active').order('id'),

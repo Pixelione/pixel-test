@@ -10,6 +10,11 @@ const shape = ({ image_path, profiles, ...a }: any) => ({ ...a, image_url: image
 export async function GET(req: Request) {
   if (!isAdmin(await getUser(req))) return json({ error: 'Solo admin' }, 403);
   const p = new URL(req.url).searchParams;
+  if (p.get('reports')) {
+    const { data, error } = await db.rpc('reports_summary', { p_limit: 100 });
+    if (error) return json({ error: error.message }, 500);
+    return json({ reports: (data ?? []).map(({ image_path, ...a }: any) => ({ ...a, image_url: imageUrl(image_path) })) });
+  }
   const q = p.get('q')?.trim();
   if (q) {
     // Escape dei metacaratteri PostgREST/LIKE; niente stringa .or costruita a mano con input grezzo.

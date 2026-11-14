@@ -25,7 +25,7 @@ before(async () => {
   `);
   for (const f of readdirSync('supabase/migrations').sort()) await db.exec(readFileSync(`supabase/migrations/${f}`, 'utf8'));
   for (const id of Object.values(U)) await db.query('insert into auth.users values ($1)', [id]);
-  await db.query(`insert into public.profiles (id, email, early_bird) values ($1, 'a@x.it', true), ($2, 'b@x.it', false)`, [U.a, U.b]);
+  await db.query(`insert into public.profiles (id, email, username, early_bird) values ($1, 'a@x.it', 'tester_a', true), ($2, 'b@x.it', 'tester_b', false)`, [U.a, U.b]);
   await db.query(`insert into public.profiles (id, email, referred_by) values ($1, 'c@x.it', $2)`, [U.c, U.b]);
 });
 
@@ -148,4 +148,23 @@ test('rate_hit: consente fino al limite, poi blocca nella stessa finestra', asyn
   assert.equal(await hit(), true);
   assert.equal(await hit(), true);
   assert.equal(await hit(), false);
+});
+
+test('segnalazione: inserita, aggiornata una volta per utente, non sulla propria area', async () => {
+  const r = await reserve(U.a, 600, 600, 2, 2); await complete(r.order_id);
+  const sub = (reporter, reason) => one(`select public.submit_report($1,$2,$3,null) as ok`, [reporter, r.area_id, reason]);
+  assert.equal((await sub(U.b, 'spam')).ok, true);
+  await sub(U.b, 'scam'); // stesso utente: aggiorna, non duplica
+  const cnt = await one(`select count(*)::int as c from public.reports where area_id = $1`, [r.area_id]);
+  assert.equal(cnt.c, 1);
+  await assert.rejects(sub(U.a, 'spam'), /area-propria/);
+});
+
+test('dettaglio area: username, coordinate, rank e pixel del proprietario', async () => {
+  const r = await reserve(U.b, 700, 700, 4, 2); await complete(r.order_id);
+  const d = await one(`select * from public.area_detail($1)`, [r.area_id]);
+  assert.equal(d.username, 'tester_b');
+  assert.equal(d.x, 700); assert.equal(d.y, 700);
+  assert.ok(Number(d.owner_pixels) >= 8);
+  assert.ok(Number(d.rank) >= 1);
 });
