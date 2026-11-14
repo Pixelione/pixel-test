@@ -21,6 +21,13 @@ export async function POST(req: Request) {
   const profile = await ensureProfile(user, req.headers.get('x-ref'));
   if (!profile.username) return json({ error: 'Scegli prima un nome dal profilo' }, 400);
 
+  // Rate limit per utente (finestra fissa) sull'endpoint più costoso (upload + Stripe).
+  const { data: allowed } = await db.rpc('rate_hit', { p_key: `checkout:${user.id}`, p_limit: 10, p_window_secs: 60 });
+  if (allowed === false) return json({ error: 'Troppi tentativi, riprova tra un minuto' }, 429);
+  // Tetto di prenotazioni aperte: stop allo spam di upload e al blocco di molte aree senza pagare.
+  const { count: pending } = await db.from('orders').select('id', { count: 'exact', head: true }).eq('user_id', user.id).eq('status', 'pending');
+  if ((pending ?? 0) >= 3) return json({ error: 'Hai già 3 prenotazioni in sospeso: pagale o annullale prima' }, 429);
+
   const body = await req.json().catch(() => null);
   if (!body) return json({ error: 'Richiesta non valida' }, 400);
   const x = int(body.x), y = int(body.y), w = int(body.w), h = int(body.h);
@@ -60,6 +67,7 @@ export async function POST(req: Request) {
   if (error) {
     await db.storage.from('areas').remove([path]);
     if (error.code === '23P01') return json({ error: 'Qualcuno ha appena preso una parte di quest\'area. Spostala.' }, 409);
+    if (error.message?.includes('troppi-ordini-in-sospeso')) return json({ error: 'Hai già 3 prenotazioni in sospeso: pagale o annullale prima' }, 429);
     return json({ error: 'Prenotazione fallita' }, 500);
   }
 

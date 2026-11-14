@@ -12,10 +12,12 @@ export async function GET(req: Request) {
   const p = new URL(req.url).searchParams;
   const q = p.get('q')?.trim();
   if (q) {
+    // Escape dei metacaratteri PostgREST/LIKE; niente stringa .or costruita a mano con input grezzo.
+    const term = `%${q.replace(/[\\%_,().*:]/g, (c) => '\\' + c)}%`;
     const { data: users } = await db
       .from('profiles')
       .select('id,username,email')
-      .or(`username.ilike.%${q.replace(/[,()%*]/g, '')}%,email.ilike.%${q.replace(/[,()%*]/g, '')}%`)
+      .or(`username.ilike.${term},email.ilike.${term}`)
       .limit(20);
     const ids = (users ?? []).map((u) => u.id);
     const { data } = ids.length ? await db.from('areas').select(SELECT).eq('status', 'active').in('owner', ids).order('id') : { data: [] };

@@ -113,6 +113,8 @@ test('rimborso: area libera, crediti usati restituiti, bonus ripresi', async () 
 });
 
 test('admin: cancella più aree e riaccredita tutti i pixel una volta sola', async () => {
+  // Libera i pending lasciati dai test precedenti: il tetto di 3 prenotazioni aperte è per utente.
+  await db.query(`select public.expire_order(id) from public.orders where user_id = $1 and status = 'pending'`, [U.b]);
   const r1 = await reserve(U.b, 100, 100, 3, 3);
   const r2 = await reserve(U.b, 200, 100, 2, 2);
   await complete(r1.order_id); await complete(r2.order_id);
@@ -130,4 +132,20 @@ test('classifica: solo pixel pagati, ordine decrescente', async () => {
   for (let i = 1; i < rows.length; i++) assert.ok(Number(rows[i - 1].paid_pixels) >= Number(rows[i].paid_pixels));
   const day = await db.query(`select * from public.leaderboard('day')`);
   assert.equal(day.rows.length, rows.length); // tutto fatto oggi
+});
+
+test('tetto prenotazioni: 3 pending ok, la quarta è rifiutata', async () => {
+  // Aree grandi: non coperte dai crediti, quindi restano 'pending' (da pagare).
+  await db.query(`select public.expire_order(id) from public.orders where user_id = $1 and status = 'pending'`, [U.c]);
+  await reserve(U.c, 400, 350, 30, 1);
+  await reserve(U.c, 400, 352, 30, 1);
+  await reserve(U.c, 400, 354, 30, 1);
+  await assert.rejects(reserve(U.c, 400, 356, 30, 1), /troppi-ordini-in-sospeso/);
+});
+
+test('rate_hit: consente fino al limite, poi blocca nella stessa finestra', async () => {
+  const hit = async () => (await one(`select public.rate_hit('t:x', 2, 60) as a`)).a;
+  assert.equal(await hit(), true);
+  assert.equal(await hit(), true);
+  assert.equal(await hit(), false);
 });
