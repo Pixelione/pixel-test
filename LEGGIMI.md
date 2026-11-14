@@ -54,4 +54,9 @@ cancella e riaccredita · `/termini` `/privacy` `/rimborsi` (bozze con segnapost
   `checkout.session.completed`, `checkout.session.expired`, `checkout.session.async_payment_succeeded`,
   `checkout.session.async_payment_failed`, `charge.refunded`, `charge.dispute.created`.
 - Email di accesso: Supabase gratuito ne manda poche all'ora. Collegare Resend come SMTP in Supabase > Authentication > SMTP.
+- Accesso con Google: in Google Cloud creare un client OAuth "Applicazione web" con URI di reindirizzamento
+  `https://bsskgvciqoomxvtduewm.supabase.co/auth/v1/callback`, poi incollare ID e segreto in Supabase >
+  Authentication > Sign In / Providers > Google. Il pulsante compare da solo quando il provider è attivo.
+- Codice a 6 cifre nell'email: con SMTP proprio, aggiungere `{{ .Token }}` al modello "Magic link or OTP".
+  Il campo per il codice c'è già nella pagina di accesso.
 - Commercialista (IVA, dati fiscali nelle pagine legali), poi chiavi live, un acquisto e un rimborso veri.

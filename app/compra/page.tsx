@@ -1,7 +1,7 @@
 'use client';
-import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import CanvasView from '@/components/CanvasView';
+import LoginOptions from '@/components/LoginOptions';
 import UsernameForm from '@/components/UsernameForm';
 import { api, supabase } from '@/lib/browser';
 import { BONUS_EVERY, CANVAS, MESSAGE_MAX, euro, estimate, overlaps, type Area } from '@/lib/config';
@@ -55,6 +55,13 @@ export default function Compra() {
       if (data.session) loadMe();
     });
     fetch('/api/areas').then((r) => r.json()).then(setAreas).catch(() => {});
+    // Accesso col codice email fatto qui nel pannello: carica subito il profilo.
+    const { data } = supabase.auth.onAuthStateChange((e) => {
+      if (e !== 'SIGNED_IN') return;
+      setLogged(true);
+      loadMe();
+    });
+    return () => data.subscription.unsubscribe();
   }, []);
 
   const nat = img ? { w: img.naturalWidth, h: img.naturalHeight } : null;
@@ -120,10 +127,13 @@ export default function Compra() {
   let body: React.ReactNode;
   if (logged === false)
     body = (
-      <div className="space-y-3 py-6 text-center">
-        <h1 className="text-2xl font-bold">Accedi per comprare</h1>
-        <p className="text-white/65">Ti serve un account per ricevere i pixel, i bonus e vederli nel profilo.</p>
-        <Link className="btn w-full" href="/accedi?next=/compra">Accedi con la tua email</Link>
+      <div className="space-y-4 pb-6">
+        <div>
+          <p className="label">Nuova area</p>
+          <h1 className="mt-1 text-2xl font-bold">Accedi per comprare</h1>
+          <p className="mt-1 text-sm text-white/65">Ti serve un account per ricevere i pixel, i bonus e vederli nel profilo.</p>
+        </div>
+        <LoginOptions next="/compra" />
       </div>
     );
   else if (!me) body = <p className="py-10 text-center text-white/60">{error || 'Caricamento…'}</p>;
