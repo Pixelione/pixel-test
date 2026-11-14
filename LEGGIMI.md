@@ -60,3 +60,10 @@ cancella e riaccredita · `/termini` `/privacy` `/rimborsi` (bozze con segnapost
 - Codice a 6 cifre nell'email: con SMTP proprio, aggiungere `{{ .Token }}` al modello "Magic link or OTP".
   Il campo per il codice c'è già nella pagina di accesso.
 - Commercialista (IVA, dati fiscali nelle pagine legali), poi chiavi live, un acquisto e un rimborso veri.
+- Manutenzione: pianificare `GET /api/cron/reconcile` (ogni 1-5 min) con header `authorization: Bearer <CRON_SECRET>`
+  (libera i lock scaduti e recupera i pagamenti il cui webhook si fosse perso). In alternativa `pg_cron` è già
+  schedulato per `release_expired`. In produzione, impostare `CRON_SECRET`.
+- Moderazione immagini (facoltativa): impostare `MODERATION_API_URL` (e `MODERATION_API_KEY`) verso un servizio che
+  riceve il PNG e risponde `{ "allowed": boolean }`. Senza, resta la rimozione admin + le segnalazioni degli utenti.
+- CSP: è in `middleware.ts` con nonce per richiesta; le pagine sono rese dinamiche apposta (`app/layout.tsx`).
+
