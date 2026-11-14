@@ -129,7 +129,7 @@ export default function Admin() {
         highlight={found.filter((a) => picked.has(a.id))}
         onRect={(r) => { setSelecting(false); search(`x=${r.x}&y=${r.y}&w=${r.w}&h=${r.h}`); }}
         onCell={(x, y) => search(`x=${x}&y=${y}&w=1&h=1`)}
-        height="min(80vh, 760px)"
+        className="relative h-[min(80vh,760px)] overflow-hidden rounded-2xl border border-white/10 lg:sticky lg:top-20"
       />
     </div>
   );
