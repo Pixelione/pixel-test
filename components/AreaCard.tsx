@@ -65,7 +65,7 @@ export default function AreaCard({ area, onClose }: { area: Area; onClose: () =>
         <>
           <div className="flex items-start gap-4">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={area.image_url} alt="" className="h-20 w-20 shrink-0 rounded-xl border border-white/10 bg-black object-contain" style={{ imageRendering: 'pixelated' }} />
+            <img src={area.image_url} alt="" className="h-20 w-20 shrink-0 rounded-xl border border-white/10 bg-black object-contain" />
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
                 <p className="truncate text-lg font-bold leading-tight">{d?.username ?? area.username}</p>

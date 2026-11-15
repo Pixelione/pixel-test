@@ -31,7 +31,6 @@ export default function CanvasView({
   const ptrs = useRef(new Map<number, { x: number; y: number }>());
   const drag = useRef<{ x: number; y: number; moved: number; cell: [number, number]; pinch?: number } | null>(null);
   const hoverCell = useRef('');
-  const imgCache = useRef(new Map<string, HTMLImageElement>()); // immagini aree già scaricate
 
   // Adatta la tela allo spazio libero tra i pannelli.
   const fit = () => {
@@ -44,13 +43,13 @@ export default function CanvasView({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(fit, []);
 
-  // Disegna le aree vendute sul fondo.
+  // Fondo della tela con la scritta: le aree (immagini vere) le mettiamo sopra come <img> scalate, così
+  // restano nitide anche in zoom e non si pixelano.
   useEffect(() => {
     const ctx = cv.current!.getContext('2d')!;
     ctx.fillStyle = '#0e1120';
     ctx.fillRect(0, 0, CANVAS, CANVAS);
     let alive = true;
-    // Scritta di fondo: la coprono le aree man mano che si vendono.
     document.fonts.ready.then(() => {
       if (!alive) return;
       const fam = getComputedStyle(document.body).getPropertyValue('--font-pixel') || 'monospace';
@@ -62,24 +61,11 @@ export default function CanvasView({
       ctx.font = `400 34px ${fam}`;
       ctx.fillText('1.000.000 PIXEL · 1 € A PIXEL', CANVAS / 2, CANVAS / 2 + 64);
       ctx.restore();
-      for (const a of areas) {
-        const cached = imgCache.current.get(a.image_url);
-        if (cached?.complete) {
-          ctx.drawImage(cached, a.x, a.y, a.w, a.h);
-          continue;
-        }
-        const img = cached ?? new Image();
-        if (!cached) {
-          img.src = a.image_url;
-          imgCache.current.set(a.image_url, img); // riuso tra un aggiornamento e l'altro: niente ricarico
-        }
-        img.onload = () => alive && ctx.drawImage(img, a.x, a.y, a.w, a.h);
-      }
     });
     return () => {
       alive = false;
     };
-  }, [areas]);
+  }, []);
 
   const cellAt = (cx: number, cy: number): [number, number] => {
     const r = box.current!.getBoundingClientRect();
@@ -207,6 +193,11 @@ export default function CanvasView({
         />
         <div className="absolute left-0 top-0 origin-top-left" style={{ width: CANVAS, height: CANVAS, transform: `translate(${view.tx}px, ${view.ty}px) scale(${view.s})` }}>
           <canvas ref={cv} width={CANVAS} height={CANVAS} className="block" style={{ imageRendering: 'pixelated' }} />
+          {/* Aree come immagini scalate: piena qualità, nitide a ogni zoom. */}
+          {areas.map((a) => (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img key={a.id} src={a.image_url} alt="" draggable={false} className="pointer-events-none absolute select-none" style={{ left: a.x, top: a.y, width: a.w, height: a.h }} />
+          ))}
         </div>
         <div
           aria-hidden
@@ -218,7 +209,7 @@ export default function CanvasView({
             <>
               {ghost.src && (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={ghost.src} alt="" className="absolute" style={{ left: ghost.x, top: ghost.y, width: ghost.w, height: ghost.h, imageRendering: 'pixelated' }} />
+                <img src={ghost.src} alt="" draggable={false} className="absolute select-none" style={{ left: ghost.x, top: ghost.y, width: ghost.w, height: ghost.h }} />
               )}
               {outline(ghost, ghost.ok ? '#34d399' : '#ff4d6d')}
             </>

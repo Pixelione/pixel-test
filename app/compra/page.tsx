@@ -13,10 +13,14 @@ type Me = {
   orders: { status: string; paid_pixels: number }[];
 };
 
-// Riduce l'immagine a w x h dimezzando a passi: meno scalettature di un ridimensionamento unico.
-function shrink(img: HTMLImageElement, w: number, h: number) {
+// Adatta l'immagine alla tela mantenendo le proporzioni, a piena qualità (riduzione a passi di metà, liscia).
+// Non la degrada: resta l'immagine originale, solo rimpicciolita per stare nella tela (max 1000 px per lato).
+function prepareDisplay(img: HTMLImageElement) {
+  const fitW = Math.max(1, Math.min(CANVAS, Math.floor((CANVAS * img.naturalWidth) / img.naturalHeight)));
+  const dw = Math.min(img.naturalWidth, fitW);
+  const dh = Math.max(1, Math.round((dw * img.naturalHeight) / img.naturalWidth));
   let src: CanvasImageSource = img, sw = img.naturalWidth, sh = img.naturalHeight;
-  while (sw / 2 >= w && sh / 2 >= h) {
+  while (sw / 2 >= dw && sh / 2 >= dh) {
     const c = document.createElement('canvas');
     c.width = Math.round(sw / 2);
     c.height = Math.round(sh / 2);
@@ -26,12 +30,12 @@ function shrink(img: HTMLImageElement, w: number, h: number) {
     src = c; sw = c.width; sh = c.height;
   }
   const out = document.createElement('canvas');
-  out.width = w;
-  out.height = h;
+  out.width = dw;
+  out.height = dh;
   const x = out.getContext('2d')!;
   x.imageSmoothingQuality = 'high';
-  x.drawImage(src, 0, 0, w, h);
-  return out.toDataURL('image/png');
+  x.drawImage(src, 0, 0, dw, dh);
+  return { url: out.toDataURL('image/png'), w: dw, h: dh };
 }
 
 export default function Compra() {
@@ -65,15 +69,9 @@ export default function Compra() {
   }, []);
 
   const nat = img ? { w: img.naturalWidth, h: img.naturalHeight } : null;
-  const maxW = nat ? Math.max(1, Math.min(CANVAS, Math.floor((CANVAS * nat.w) / nat.h))) : 1;
-  const fullW = nat ? Math.min(nat.w, maxW) : 1; // larghezza a piena qualità che entra nella tela
+  const maxW = nat ? Math.max(1, Math.min(CANVAS, Math.floor((CANVAS * nat.w) / nat.h))) : 1; // larghezza massima che entra nella tela
   const hOf = (ww: number) => (nat ? Math.max(1, Math.min(CANVAS, Math.round((ww * nat.h) / nat.w))) : 1);
   const h = hOf(w);
-  const fullPx = nat ? Math.min(nat.w, fullW) * hOf(fullW) : 0;
-
-  useEffect(() => {
-    if (img && w > 0) setPreview(shrink(img, w, h));
-  }, [img, w, h]);
 
   const pick = (file?: File) => {
     setError('');
@@ -83,8 +81,9 @@ export default function Compra() {
     const im = new Image();
     im.onload = () => {
       setImg(im);
+      setPreview(prepareDisplay(im).url); // immagine piena qualità, calcolata una volta sola
       const fit = Math.max(1, Math.min(CANVAS, Math.floor((CANVAS * im.naturalWidth) / im.naturalHeight)));
-      setW(Math.min(im.naturalWidth, fit, 100)); // partenza: al massimo 100 pixel di larghezza
+      setW(Math.min(fit, 150)); // dimensione iniziale sulla tela
       setPos(null);
     };
     im.onerror = () => setError('Immagine non leggibile.');
@@ -162,7 +161,7 @@ export default function Compra() {
           >
             {preview ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={preview} alt="" className="h-14 w-14 shrink-0 rounded-lg bg-black object-contain" style={{ imageRendering: 'pixelated' }} />
+              <img src={preview} alt="" className="h-14 w-14 shrink-0 rounded-lg bg-black object-contain" />
             ) : (
               <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-white/5 text-white/60 group-hover:text-gold">
                 <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden className="fill-current"><path d="M10 14h4V8h4l-6-6-6 6h4zM3 16h3v3h12v-3h3v6H3z" /></svg>
@@ -196,38 +195,29 @@ export default function Compra() {
               />
             </label>
             <div className="flex items-center justify-between text-xs">
-              <span className="font-mono text-white/55">{pixels.toLocaleString('it-IT')} pixel</span>
-              <span className={w > fullW ? 'text-amber-300' : 'text-white/55'}>
-                {w > fullW ? 'Ingrandita: nessun dettaglio in più' : `Qualità ${Math.round((w / fullW) * 100)}%`}
-              </span>
+              <span className="font-mono text-white/55">{pixels.toLocaleString('it-IT')} pixel di tela</span>
+              <span className="text-white/55">proporzioni mantenute</span>
             </div>
             <div className="grid grid-cols-4 gap-1 rounded-xl bg-black/30 p-1">
-              {[0.1, 0.25, 0.5, 1].map((f) => {
-                const v = Math.max(1, Math.round(fullW * f));
+              {([['Piccola', 0.25], ['Media', 0.5], ['Grande', 0.75], ['Max', 1]] as const).map(([lbl, f]) => {
+                const v = Math.max(1, Math.round(maxW * f));
                 return (
-                  <button key={f} type="button" onClick={() => setW(v)} className={`rounded-lg py-1.5 text-xs font-medium transition ${w === v ? 'bg-white text-bg' : 'text-white/65 hover:bg-white/10'}`}>
-                    {f === 1 ? 'Piena' : `${f * 100}%`}
+                  <button key={lbl} type="button" onClick={() => setW(v)} className={`rounded-lg py-1.5 text-xs font-medium transition ${w === v ? 'bg-white text-bg' : 'text-white/65 hover:bg-white/10'}`}>
+                    {lbl}
                   </button>
                 );
               })}
             </div>
             <p className="text-xs leading-relaxed text-white/50">
-              A piena qualità occupa <b className="text-white/80">{fullW}×{hOf(fullW)} = {fullPx.toLocaleString('it-IT')} px ({euro(fullPx * 100)})</b>
-              {fullW < nat.w && ', ridotta per entrare nella tela'}. Più la restringi, meno paghi: stessa immagine, meno dettagli.
+              Il cursore cambia solo quanto grande appare sulla tela e quindi il prezzo. L&apos;immagine resta la stessa,
+              rimpicciolita senza perdere qualità (originale {nat.w}×{nat.h}).
             </p>
             {preview && (
-              <div className="flex items-end gap-4 rounded-2xl bg-black/30 p-3">
-                <figure className="space-y-1">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={preview} alt="Anteprima ingrandita" className="w-32 rounded-lg" style={{ imageRendering: 'pixelated' }} />
-                  <figcaption className="label text-[10px]">Ingrandita</figcaption>
-                </figure>
-                <figure className="space-y-1">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={preview} alt="Dimensione reale" style={{ width: Math.min(w, 128), imageRendering: 'pixelated' }} />
-                  <figcaption className="label text-[10px]">Reale</figcaption>
-                </figure>
-              </div>
+              <figure className="space-y-1 rounded-2xl bg-black/30 p-3">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={preview} alt="Anteprima" className="max-h-40 w-auto rounded-lg" style={{ aspectRatio: `${w} / ${h}` }} />
+                <figcaption className="label text-[10px]">Anteprima · {w}×{h} sulla tela</figcaption>
+              </figure>
             )}
           </Step>
         )}

@@ -106,7 +106,7 @@ export default function Admin() {
                       onChange={(e) => setPicked((p) => { const n = new Set(p); if (e.target.checked) n.add(a.id); else n.delete(a.id); return n; })}
                     />
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={a.image_url} alt="" className="h-10 w-10 rounded bg-black object-contain" style={{ imageRendering: 'pixelated' }} />
+                    <img src={a.image_url} alt="" className="h-10 w-10 rounded bg-black object-contain" />
                     <span className="min-w-0 flex-1">
                       <span className="block truncate"><b>{a.username ?? '—'}</b> · {a.email}</span>
                       <span className="block font-mono text-xs text-white/50">#{a.id} · {a.w}×{a.h} · {a.x},{a.y}</span>

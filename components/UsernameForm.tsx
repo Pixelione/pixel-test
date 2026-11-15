@@ -25,7 +25,7 @@ export default function UsernameForm({ onDone, initial = '' }: { onDone: () => v
     >
       <label className="block text-sm text-white/70" htmlFor="username">Nome visibile</label>
       <div className="flex gap-2">
-        <input id="username" className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="es. mario_rossi" maxLength={20} required />
+        <input id="username" className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="es. Mario Rossi" maxLength={20} required />
         <button className="btn" disabled={busy}>Salva</button>
       </div>
       {error && <p role="alert" className="text-sm text-red-400">{error}</p>}

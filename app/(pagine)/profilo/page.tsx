@@ -68,7 +68,7 @@ export default function Profilo() {
           {me.areas.map((a) => (
             <li key={a.id} className="card flex items-center gap-3 py-3">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={a.image_url} alt="" className="h-14 w-14 rounded bg-black object-contain" style={{ imageRendering: 'pixelated' }} />
+              <img src={a.image_url} alt="" className="h-14 w-14 rounded bg-black object-contain" />
               <div className="min-w-0 text-sm">
                 <p className="font-mono">{a.w}×{a.h} · {a.x},{a.y}</p>
                 {a.message && <p className="truncate text-white/65">{a.message}</p>}

@@ -51,8 +51,12 @@ export async function POST(req: Request) {
   if (!m) return json({ error: 'Immagine mancante' }, 400);
   const png = Buffer.from(m[1], 'base64');
   const size = pngSize(png);
-  // L'immagine deve essere già ridotta esattamente alla misura dell'area: 1 pixel immagine = 1 pixel tela.
-  if (!size || size.w !== w || size.h !== h) return json({ error: 'Immagine non corrispondente all\'area' }, 400);
+  // L'immagine è a piena qualità (può essere più grande dell'area): deve stare entro la tela e avere
+  // le stesse proporzioni dell'area (così non viene deformata). Sulla tela la mostriamo scalata a w×h.
+  if (!size || size.w < 1 || size.h < 1 || size.w > CANVAS || size.h > CANVAS)
+    return json({ error: 'Immagine non valida' }, 400);
+  if (Math.abs(size.w * h - size.h * w) > Math.max(size.w, size.h))
+    return json({ error: 'Le proporzioni dell\'immagine non corrispondono all\'area' }, 400);
   if (png.length > 4 * 1024 * 1024) return json({ error: 'Immagine troppo pesante' }, 400);
 
   // Moderazione automatica opzionale (MODERATION_API_URL). Senza, decide l'admin con rimozione/segnalazioni.

@@ -111,7 +111,7 @@ export default function Home() {
                 {(roll ? [...latest, ...latest] : latest).map((a, i) => (
                   <button key={i} type="button" aria-hidden={i >= latest.length} tabIndex={i >= latest.length ? -1 : 0} onClick={() => setOpen(a)} className="flex shrink-0 items-center gap-2 text-sm">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={a.image_url} alt="" className="h-6 w-6 rounded bg-black object-contain" style={{ imageRendering: 'pixelated' }} />
+                    <img src={a.image_url} alt="" className="h-6 w-6 rounded bg-black object-contain" />
                     <b>{a.username}</b>
                     <span className="font-mono text-white/50">{n(a.w * a.h)} px</span>
                   </button>

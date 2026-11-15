@@ -28,9 +28,10 @@ export async function POST(req: Request) {
   const user = await getUser(req);
   if (!user) return json({ error: 'Accedi per continuare' }, 401);
   await ensureProfile(user, req.headers.get('x-ref'));
-  const { username } = await req.json().catch(() => ({}));
-  if (typeof username !== 'string' || !/^[A-Za-z0-9_.-]{3,20}$/.test(username))
-    return json({ error: 'Nome: da 3 a 20 caratteri tra lettere, numeri, punto, trattino e _' }, 400);
+  const raw = (await req.json().catch(() => ({}))).username;
+  const username = typeof raw === 'string' ? raw.trim().replace(/\s+/g, ' ') : '';
+  if (username.length < 3 || username.length > 20 || !/^[A-Za-z0-9._-]+( [A-Za-z0-9._-]+)*$/.test(username))
+    return json({ error: 'Nome: da 3 a 20 caratteri tra lettere, numeri, spazio, punto, trattino e _ (niente spazi iniziali/finali)' }, 400);
   const { error } = await db.from('profiles').update({ username }).eq('id', user.id);
   if (error) return json({ error: error.code === '23505' ? 'Nome già preso' : error.message }, 400);
   return json({ ok: true });
