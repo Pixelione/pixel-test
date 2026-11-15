@@ -77,7 +77,7 @@ export default function Profilo() {
             </li>
           ))}
         </ul>
-        <p className="text-xs text-white/45">Immagine e link non si cambiano dopo l&apos;acquisto. Per problemi scrivi a info@pixelione.com.</p>
+        <p className="text-xs text-white/45">Immagine e link non si cambiano dopo l&apos;acquisto. Per problemi scrivi a f3013032@gmail.com.</p>
       </section>
 
       <section className="space-y-2">

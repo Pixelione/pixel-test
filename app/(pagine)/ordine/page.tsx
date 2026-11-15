@@ -55,7 +55,7 @@ export default function Ordine() {
       {state === 'error' && (
         <>
           <h1 className="text-xl font-bold">Pagamento non confermato</h1>
-          <p className="text-white/65">Se ti è stato addebitato qualcosa scrivi a info@pixelione.com con l&apos;email usata.</p>
+          <p className="text-white/65">Se ti è stato addebitato qualcosa scrivi a f3013032@gmail.com con l&apos;email usata.</p>
           <Link href="/profilo" className="btn-ghost">Vai al profilo</Link>
         </>
       )}

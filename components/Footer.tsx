@@ -2,7 +2,7 @@ export const LEGAL = [
   ['/termini', 'Termini'],
   ['/privacy', 'Privacy e cookie'],
   ['/rimborsi', 'Rimborsi'],
-  ['mailto:info@pixelione.com', 'Contatti'],
+  ['mailto:f3013032@gmail.com', 'Contatti'],
 ];
 
 export default function Footer() {
