@@ -8,16 +8,18 @@ export async function GET(req: Request) {
   if (!user) return json({ error: 'Accedi per continuare' }, 401);
   const profile = await ensureProfile(user, req.headers.get('x-ref'));
   db.rpc('touch_seen', { p_user: user.id }); // ultimo online, senza bloccare la risposta
-  const [credits, areas, orders] = await Promise.all([
+  const [credits, areas, orders, refs] = await Promise.all([
     db.rpc('credit_balance', { p_user: user.id }),
-    db.from('areas').select('id,x,y,w,h,image_path,link,message,created_at').eq('owner', user.id).eq('status', 'active').order('id'),
+    db.from('areas').select('id,x,y,w,h,image_path,link,message,clicks,created_at').eq('owner', user.id).eq('status', 'active').order('id'),
     db.from('orders').select('id,pixels,paid_pixels,credits_used,bonus_pixels,amount_cents,status,created_at').eq('user_id', user.id).order('id', { ascending: false }).limit(50),
+    db.from('profiles').select('id', { count: 'exact', head: true }).eq('referred_by', user.id),
   ]);
   return json({
     profile,
     admin: isAdmin(user),
     fee,
     credits: credits.data ?? 0,
+    referrals: refs.count ?? 0,
     areas: (areas.data ?? []).map(({ image_path, ...a }) => ({ ...a, image_url: imageUrl(image_path) })),
     orders: orders.data ?? [],
   });

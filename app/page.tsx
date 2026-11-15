@@ -1,6 +1,6 @@
 'use client';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import AreaCard from '@/components/AreaCard';
 import CanvasView from '@/components/CanvasView';
 import { LEGAL } from '@/components/Footer';
@@ -15,6 +15,7 @@ export default function Home() {
   const [open, setOpen] = useState<Area | null>(null);
   const [hover, setHover] = useState<{ x: number; y: number; cx: number; cy: number } | null>(null);
   const [info, setInfo] = useState(false);
+  const opened = useRef(false); // apri il popup da ?area= una volta sola
 
   useEffect(() => {
     let etag = '';
@@ -25,7 +26,13 @@ export default function Home() {
         const r = await fetch('/api/areas', { cache: 'no-store', headers: etag ? { 'if-none-match': etag } : {} });
         if (r.status === 304) return;
         etag = r.headers.get('etag') || '';
-        if (r.ok) setAreas(await r.json());
+        if (r.ok) {
+          const list: Area[] = await r.json();
+          setAreas(list);
+          // Link condiviso /?area=<id>: apre il popup di quell'area al primo caricamento.
+          const want = Number(new URLSearchParams(location.search).get('area'));
+          if (want && !opened.current) { opened.current = true; const a = list.find((x) => x.id === want); if (a) setOpen(a); }
+        }
       } catch {}
     };
     load();

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { api } from '@/lib/browser';
 import { euro } from '@/lib/config';
 
-type Order = { id: number; pixels: number; paid_pixels: number; credits_used: number; bonus_pixels: number; amount_cents: number; status: string };
+type Order = { id: number; area_id: number; pixels: number; paid_pixels: number; credits_used: number; bonus_pixels: number; amount_cents: number; status: string };
 
 export default function Ordine() {
   const [order, setOrder] = useState<Order | null>(null);
@@ -42,7 +42,18 @@ export default function Ordine() {
           <h1 className="text-2xl font-bold">Fatto! I tuoi {order.pixels} pixel sono sulla tela.</h1>
           {order.amount_cents > 0 && <p className="text-white/65">Pagati {euro(order.amount_cents)}. La ricevuta arriva da Stripe via email.</p>}
           {order.bonus_pixels > 0 && <p className="text-gold">+{order.bonus_pixels} pixel omaggio nel tuo profilo.</p>}
-          <div className="flex justify-center gap-2"><Link href="/" className="btn">Guarda la tela</Link><Link href="/profilo" className="btn-ghost">Profilo</Link></div>
+          <button
+            type="button"
+            className="btn mx-auto"
+            onClick={() => {
+              const url = `${location.origin}/a/${order.area_id}`;
+              if (navigator.share) navigator.share({ title: 'PIXELIONE', text: 'La mia area su PIXELIONE', url }).catch(() => {});
+              else navigator.clipboard.writeText(url).catch(() => {});
+            }}
+          >
+            Condividi la tua area
+          </button>
+          <div className="flex justify-center gap-2"><Link href={`/a/${order.area_id}`} className="btn-ghost">Vedi la pagina</Link><Link href="/" className="btn-ghost">Tela</Link></div>
         </>
       )}
       {state === 'cancelled' && (

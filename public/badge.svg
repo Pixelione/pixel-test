@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="160" height="40" viewBox="0 0 160 40" role="img" aria-label="Sono su PIXELIONE">
+  <rect width="160" height="40" rx="8" fill="#07080f"/>
+  <rect x="0.5" y="0.5" width="159" height="39" rx="7.5" fill="none" stroke="#ffd60a" stroke-opacity="0.5"/>
+  <rect x="12" y="13" width="14" height="14" rx="3" fill="#ffd60a"/>
+  <text x="34" y="18" font-family="Verdana,Geneva,sans-serif" font-size="8" fill="#9aa0b4" letter-spacing="1.5">SONO SU</text>
+  <text x="34" y="29" font-family="Verdana,Geneva,sans-serif" font-size="11" font-weight="bold" fill="#f4f5fb" letter-spacing="1">PIXELIONE</text>
+</svg>

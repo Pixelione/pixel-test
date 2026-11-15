@@ -168,3 +168,15 @@ test('dettaglio area: username, coordinate, rank e pixel del proprietario', asyn
   assert.ok(Number(d.owner_pixels) >= 8);
   assert.ok(Number(d.rank) >= 1);
 });
+
+test('click: bump_click incrementa e ritorna il link solo per area attiva', async () => {
+  const r = await reserve(U.b, 800, 800, 3, 3); await complete(r.order_id);
+  await db.query(`update public.areas set link = 'https://esempio.it' where id = $1`, [r.area_id]);
+  const l1 = await one('select public.bump_click($1) as link', [r.area_id]);
+  assert.equal(l1.link, 'https://esempio.it');
+  await one('select public.bump_click($1) as link', [r.area_id]);
+  const c = await one('select clicks from public.areas where id = $1', [r.area_id]);
+  assert.equal(c.clicks, 2);
+  const none = await one('select public.bump_click(999999) as link');
+  assert.equal(none.link, null);
+});

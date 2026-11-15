@@ -7,7 +7,7 @@ type Detail = {
   id: number; x: number; y: number; w: number; h: number; image_url: string;
   link: string | null; message: string | null; username: string;
   owner_pixels: number; owner_areas: number; rank: number | null;
-  last_seen: string | null; member_since: string;
+  last_seen: string | null; member_since: string; clicks: number;
 };
 
 const REASONS: [string, string][] = [
@@ -45,6 +45,16 @@ export default function AreaCard({ area, onClose }: { area: Area; onClose: () =>
     supabase.auth.getSession().then(({ data }) => setLogged(!!data.session));
   }, [area.id]);
 
+  const [shared, setShared] = useState(false);
+  const share = async () => {
+    const url = `${location.origin}/a/${area.id}`;
+    const text = `${d?.username ?? area.username} su PIXELIONE`;
+    try {
+      if (navigator.share) await navigator.share({ title: 'PIXELIONE', text, url });
+      else { await navigator.clipboard.writeText(url); setShared(true); setTimeout(() => setShared(false), 1500); }
+    } catch {}
+  };
+
   const send = async () => {
     setBusy(true); setErr('');
     try {
@@ -79,6 +89,7 @@ export default function AreaCard({ area, onClose }: { area: Area; onClose: () =>
               {d && (
                 <p className="mt-1 font-mono text-[11px] text-white/40">
                   {n(d.owner_pixels)} px in {d.owner_areas} {d.owner_areas === 1 ? 'area' : 'aree'}
+                  {d.clicks > 0 && ` · ${n(d.clicks)} click`}
                 </p>
               )}
               {area.message && <p className="mt-2 break-words text-sm text-white/85">{area.message}</p>}
@@ -87,16 +98,22 @@ export default function AreaCard({ area, onClose }: { area: Area; onClose: () =>
           </div>
           <div className="mt-4 flex gap-2">
             {area.link && (
-              <a href={area.link} target="_blank" rel="sponsored noopener noreferrer" className="btn flex-1">
+              <a href={`/r/${area.id}`} target="_blank" rel="sponsored noopener noreferrer" className="btn flex-1">
                 Visita <span className="truncate font-normal opacity-70">{area.link.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '')}</span>
               </a>
             )}
+            <button type="button" onClick={share} aria-label="Condividi questa area" title="Condividi" className={`btn-ghost ${area.link ? 'w-12 px-0' : 'flex-1'}`}>
+              {shared ? '✓' : (
+                <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden className="fill-current"><path d="M14 9V5l7 7-7 7v-4H3V9z" /></svg>
+              )}
+              {!area.link && <span>Condividi</span>}
+            </button>
             <button
               type="button"
               onClick={() => setReporting(true)}
               aria-label="Segnala questa area"
               title="Segnala"
-              className={`btn-ghost ${area.link ? 'w-12 px-0' : 'flex-1'}`}
+              className="btn-ghost w-12 px-0"
             >
               <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden className="fill-current"><path d="M5 3h14l-3 5 3 5H7v8H5z" /></svg>
               {!area.link && <span>Segnala</span>}

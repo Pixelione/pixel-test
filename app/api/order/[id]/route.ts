@@ -23,7 +23,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       order.status = 'expired';
     }
   }
-  const { data: fresh } = await db.from('orders').select('id,pixels,paid_pixels,credits_used,bonus_pixels,amount_cents,fee_cents,status').eq('id', order.id).single();
+  const { data: fresh } = await db.from('orders').select('id,area_id,pixels,paid_pixels,credits_used,bonus_pixels,amount_cents,fee_cents,status').eq('id', order.id).single();
   return json(fresh);
 }
 
